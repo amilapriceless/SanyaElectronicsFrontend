@@ -65,6 +65,7 @@ const ProductForm = ({ initialData = null, onSubmit, isSubmitting = false, apiEr
     powerConsumption: '',
     powerConsumptionUnit: 'W',
     technology: '',
+    btuCount: '',
     screenSize: '',
     resolutionStandard: '',
     displayType: '',
@@ -84,7 +85,7 @@ const ProductForm = ({ initialData = null, onSubmit, isSubmitting = false, apiEr
 
   // Warranty items
   const [warranties, setWarranties] = useState([
-    { coverage: 'Compressor', unit: 'years', period: 1 },
+    { coverage: 'Motor', unit: 'years', period: 1 },
   ]);
 
   const [specRows, setSpecRows] = useState([]);
@@ -143,6 +144,7 @@ const ProductForm = ({ initialData = null, onSubmit, isSubmitting = false, apiEr
       category: 'Category',
       description: 'Description',
       technology: 'Technology',
+      btuCount: 'BTU Count',
       powerConsumption: 'Power Consumption',
       powerConsumptionUnit: 'Power Consumption Unit',
       stock: 'Stock Quantity',
@@ -189,6 +191,7 @@ const ProductForm = ({ initialData = null, onSubmit, isSubmitting = false, apiEr
         powerConsumption: initialData.powerConsumption ?? '',
         powerConsumptionUnit: initialData.powerConsumptionUnit || 'W',
         technology: initialData.technology || '',
+        btuCount: initialData.btuCount ?? '',
         screenSize: initialData.screenSize ?? initialData.specifications?.screenSize ?? '',
         resolutionStandard: initialData.resolutionStandard ?? initialData.specifications?.['Resolution Standard'] ?? initialData.specifications?.resolutionStandard ?? '',
         displayType: initialData.displayType ?? initialData.specifications?.['Display Type'] ?? initialData.specifications?.displayType ?? '',
@@ -220,7 +223,7 @@ const ProductForm = ({ initialData = null, onSubmit, isSubmitting = false, apiEr
           }))
         );
       } else {
-        setWarranties([{ coverage: 'Compressor', unit: 'years', period: 1 }]);
+        setWarranties([{ coverage: 'Motor', unit: 'years', period: 1 }]);
       }
 
       if (initialData.specifications && typeof initialData.specifications === 'object') {
@@ -256,7 +259,22 @@ const ProductForm = ({ initialData = null, onSubmit, isSubmitting = false, apiEr
       ? ['LED', 'Smart LED']
       : ['Inverter', 'Non-Inverter'];
 
+  const isBlenderCategory = formData.category === 'Blenders';
   const isSmartLedTv = formData.category === 'Televisions' && formData.technology === 'Smart LED';
+
+  useEffect(() => {
+    if (isBlenderCategory) {
+      setFormData((prev) => ({ ...prev, technology: '' }));
+      setWarranties((prev) => {
+        if (prev.length === 0) return [{ coverage: 'Motor', unit: 'years', period: 1 }];
+        return prev.map((warranty, index) =>
+          index === 0 && (!warranty.coverage || !String(warranty.coverage).trim())
+            ? { ...warranty, coverage: 'Motor' }
+            : warranty
+        );
+      });
+    }
+  }, [isBlenderCategory]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -278,6 +296,17 @@ const ProductForm = ({ initialData = null, onSubmit, isSubmitting = false, apiEr
           [priceField]: value,
         },
       }));
+    } else if (name === 'category') {
+      setFormData((prev) => ({
+        ...prev,
+        category: value,
+      }));
+      if (value === 'AC') {
+        setWarranties((prev) => {
+          if (prev.length === 0) return [{ coverage: 'AC', unit: 'years', period: 1 }];
+          return prev.map((warranty, index) => (index === 0 ? { ...warranty, coverage: 'AC' } : warranty));
+        });
+      }
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -311,7 +340,7 @@ const ProductForm = ({ initialData = null, onSubmit, isSubmitting = false, apiEr
     setWarranties(updated);
   };
 
-  const addWarrantyRow = () => setWarranties([...warranties, { coverage: '', unit: 'years', period: '' }]);
+  const addWarrantyRow = () => setWarranties([...warranties, { coverage: 'Motor', unit: 'years', period: '' }]);
   const removeWarrantyRow = (index) => setWarranties(warranties.filter((_, i) => i !== index));
 
   const handleSpecChange = (id, field, value) => {
@@ -333,8 +362,20 @@ const ProductForm = ({ initialData = null, onSubmit, isSubmitting = false, apiEr
     if (!formData.name || !String(formData.name).trim()) errors.name = 'Product Name is required.';
     if (!formData.brand || !String(formData.brand).trim()) errors.brand = 'Brand name is required.';
     if (!formData.category || !String(formData.category).trim()) errors.category = 'Category selection is required.';
-    if (!formData.description || !String(formData.description).trim()) errors.description = 'Description is required.';
-    if (!formData.technology || !String(formData.technology).trim()) errors.technology = 'Technology is required.';
+    if (formData.category !== 'AC' && (!formData.description || !String(formData.description).trim())) {
+      errors.description = 'Description is required.';
+    }
+    if (!isBlenderCategory && (!formData.technology || !String(formData.technology).trim())) {
+      errors.technology = 'Technology is required.';
+    }
+    if (formData.category === 'AC') {
+      const btuCount = Number(formData.btuCount);
+      if (formData.btuCount === '' || formData.btuCount === null || formData.btuCount === undefined) {
+        errors.btuCount = 'BTU count is required for AC products.';
+      } else if (!Number.isInteger(btuCount) || btuCount <= 0) {
+        errors.btuCount = 'BTU count must be a positive whole number.';
+      }
+    }
 
     const cashPriceNum = Number(formData.prices?.cash);
     if (formData.prices?.cash === '' || formData.prices?.cash === null || formData.prices?.cash === undefined) {
@@ -404,7 +445,7 @@ const ProductForm = ({ initialData = null, onSubmit, isSubmitting = false, apiEr
       description: stringValue(formData.description),
       powerConsumption: formData.powerConsumption ? numberValue(formData.powerConsumption) : 0,
       powerConsumptionUnit: stringValue(formData.powerConsumptionUnit, 'W'),
-      technology: stringValue(formData.technology),
+      ...(formData.category === 'AC' ? { btuCount: numberValue(formData.btuCount) } : {}),
       prices: {
         cash: cashPriceNumeric,
         hire: hirePriceNumeric,
@@ -415,6 +456,10 @@ const ProductForm = ({ initialData = null, onSubmit, isSubmitting = false, apiEr
       warranty: cleanedWarranties,
       specifications: specificationsObj,
     };
+
+    if (!isBlenderCategory) {
+      payload.technology = stringValue(formData.technology);
+    }
 
     onSubmit(payload);
   };
@@ -592,30 +637,81 @@ const ProductForm = ({ initialData = null, onSubmit, isSubmitting = false, apiEr
             )}
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-              Technology *
-            </label>
-            <select
-              name="technology"
-              data-field-path="technology"
-              value={formData.technology}
-              onChange={handleChange}
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 min-h-[44px] text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            >
-              <option value="">Select Technology</option>
-              {technologyOptions.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-            {fieldErrors.technology && (
-              <p className="text-xs text-rose-600 mt-1 font-semibold flex items-center gap-1">
-                <AlertCircle className="w-3.5 h-3.5" /> {fieldErrors.technology}
-              </p>
-            )}
-          </div>
+          {!isBlenderCategory && (
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Technology *
+              </label>
+              <select
+                name="technology"
+                data-field-path="technology"
+                value={formData.technology}
+                onChange={handleChange}
+                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 min-h-[44px] text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              >
+                <option value="">Select Technology</option>
+                {technologyOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+              {fieldErrors.technology && (
+                <p className="text-xs text-rose-600 mt-1 font-semibold flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5" /> {fieldErrors.technology}
+                </p>
+              )}
+            </div>
+          )}
+
+          {formData.category === 'AC' && (
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                BTU Count *
+              </label>
+              <input
+                type="number"
+                name="btuCount"
+                data-field-path="btuCount"
+                min="1"
+                step="1"
+                value={formData.btuCount}
+                onChange={handleChange}
+                placeholder="e.g. 12000"
+                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 min-h-[44px] text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              />
+              {fieldErrors.btuCount && (
+                <p className="text-xs text-rose-600 mt-1 font-semibold flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5" /> {fieldErrors.btuCount}
+                </p>
+              )}
+            </div>
+          )}
+
+          {isBlenderCategory && (
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Power (Watts)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  name="powerConsumption"
+                  data-field-path="powerConsumption"
+                  value={formData.powerConsumption}
+                  onChange={handleChange}
+                  placeholder="e.g. 750"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 pr-12 min-h-[44px] text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                />
+                <span className="absolute inset-y-0 right-3 flex items-center text-xs font-bold text-slate-500">W</span>
+              </div>
+              {fieldErrors.powerConsumption && (
+                <p className="text-xs text-rose-600 mt-1 font-semibold flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5" /> {fieldErrors.powerConsumption}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="md:col-span-3">
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">

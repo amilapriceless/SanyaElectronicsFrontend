@@ -1,22 +1,29 @@
 import React, { useState } from 'react';
 import { Lock, KeyRound, X, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '../../../context/AdminContext';
 
 const AdminPasscodeModal = () => {
   const { isAdminModalOpen, closeAdminModal, login } = useAdmin();
+  const navigate = useNavigate();
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isAdminModalOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const success = login(passcode);
-    if (success) {
+    setIsSubmitting(true);
+    try {
+      await login(passcode);
       setPasscode('');
-    } else {
-      setError('Invalid passcode. Use test passcode: 123');
+      navigate('/admin/roles');
+    } catch (loginError) {
+      setError(loginError.message || 'Invalid primary passcode');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -55,13 +62,12 @@ const AdminPasscodeModal = () => {
                 type="password"
                 required
                 autoFocus
-                placeholder="Enter passcode (Test: 123)"
+                placeholder="Enter primary passcode"
                 value={passcode}
                 onChange={(e) => setPasscode(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
-            <p className="text-[11px] text-gray-400 mt-1">Hint: Test passcode is <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-700 font-bold">123</code></p>
           </div>
 
           {error && (
@@ -83,7 +89,7 @@ const AdminPasscodeModal = () => {
               type="submit"
               className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors cursor-pointer"
             >
-              Unlock
+              {isSubmitting ? 'Verifying...' : 'Continue'}
             </button>
           </div>
         </form>

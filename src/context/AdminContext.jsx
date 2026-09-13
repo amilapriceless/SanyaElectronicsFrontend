@@ -1,22 +1,40 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import {
+  getCurrentSession,
+  loginWithRole,
+  logoutSession,
+  verifyPrimaryPasscode,
+} from '../services/auth.api';
 
 const AdminContext = createContext();
 
 export const AdminProvider = ({ children }) => {
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
-  const login = (passcode) => {
-    if (passcode === '123') {
-      setIsAdmin(true);
-      setIsAdminModalOpen(false);
-      return true;
-    }
-    return false;
+  useEffect(() => {
+    getCurrentSession()
+      .then((session) => setRole(session.role || null))
+      .catch(() => setRole(null))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const login = async (passcode) => {
+    await verifyPrimaryPasscode(passcode);
+    setIsAdminModalOpen(false);
+    return true;
   };
 
-  const logout = () => {
-    setIsAdmin(false);
+  const loginRole = async (selectedRole, password) => {
+    const session = await loginWithRole(selectedRole, password);
+    setRole(session.role || selectedRole);
+    return session;
+  };
+
+  const logout = async () => {
+    await logoutSession();
+    setRole(null);
   };
 
   const openAdminModal = () => {
@@ -30,8 +48,13 @@ export const AdminProvider = ({ children }) => {
   return (
     <AdminContext.Provider
       value={{
-        isAdmin,
+        role,
+        isAdmin: Boolean(role),
+        isSystemAdmin: role === 'systemAdmin',
+        isOfficer: role === 'officer',
+        isLoading,
         login,
+        loginRole,
         logout,
         isAdminModalOpen,
         openAdminModal,

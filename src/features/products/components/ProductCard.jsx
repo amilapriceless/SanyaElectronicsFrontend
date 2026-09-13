@@ -4,7 +4,7 @@ import { Eye, Edit3, Trash2, Zap, Tag } from 'lucide-react';
 import { useAdmin } from '../../../context/AdminContext';
 
 const ProductCard = ({ product, onDeleteClick }) => {
-  const { isAdmin } = useAdmin();
+  const { isSystemAdmin } = useAdmin();
 
   const primaryImage =
     product.images && product.images.length > 0 && product.images[0]
@@ -27,10 +27,12 @@ const ProductCard = ({ product, onDeleteClick }) => {
     <div className="bg-white rounded-3xl border border-slate-200 shadow-xs hover:shadow-xl hover:border-slate-300 transition-all duration-200 overflow-hidden flex flex-col justify-between group">
       <div>
         {/* Top Badges & Image Container */}
-        <div className="relative aspect-4/3 overflow-hidden bg-slate-100">
+        <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
           <img
             src={primaryImage}
             alt={product.name}
+            loading="lazy"
+            decoding="async"
             onError={(e) => {
               e.target.onerror = null;
               e.target.src =
@@ -124,7 +126,7 @@ const ProductCard = ({ product, onDeleteClick }) => {
 
       {/* Action Buttons with Minimum 44px Touch Targets */}
       <div className="p-4 pt-0 mt-2">
-        {isAdmin ? (
+        {isSystemAdmin ? (
           <div className="grid grid-cols-3 gap-1.5">
             <Link
               to={`/products/${product._id || product.id}`}

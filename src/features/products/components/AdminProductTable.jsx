@@ -111,6 +111,8 @@ const AdminProductTable = ({ products = [], onDeleteClick }) => {
                       <img
                         src={primaryImg}
                         alt={product.name}
+                        loading="lazy"
+                        decoding="async"
                         className="w-12 h-12 rounded-xl object-cover shrink-0 border border-slate-100 bg-slate-100"
                         onError={(e) => {
                           e.target.onerror = null;
@@ -262,6 +264,8 @@ const AdminProductTable = ({ products = [], onDeleteClick }) => {
                             <img
                               src={primaryImg}
                               alt={product.name}
+                              loading="lazy"
+                              decoding="async"
                               className="w-9 h-9 rounded-lg object-cover bg-slate-100 border border-slate-200"
                               onError={(e) => {
                                 e.target.onerror = null;
@@ -351,10 +355,12 @@ const AdminProductTable = ({ products = [], onDeleteClick }) => {
             </div>
 
             <div className="space-y-4">
-              <div className="aspect-16/10 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
+              <div className="aspect-[16/10] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
                 <img
                   src={selectedProduct.images?.[0] || 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?auto=format&fit=crop&w=600&q=80'}
                   alt={selectedProduct.name}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover"
                 />
               </div>

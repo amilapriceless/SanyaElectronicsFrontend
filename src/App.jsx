@@ -3,12 +3,12 @@ import { BrowserRouter, Link, useLocation } from 'react-router-dom';
 import { AdminProvider, useAdmin } from './context/AdminContext';
 import AppRoutes from './routes/AppRoutes';
 import AdminPasscodeModal from './features/products/components/AdminPasscodeModal';
-import { ShieldAlert, ShieldCheck, LogOut, Store, Home, Menu, X } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, LogOut, Store, Home, BarChart3, Menu, X, KeyRound } from 'lucide-react';
 
 const LOGO_URL = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRIVdZuPse8heT6_uklpyF6Jczs_Kl9-wM-k82b9-FKvg&s=10';
 
 const NavigationHeader = () => {
-  const { isAdmin, openAdminModal, logout } = useAdmin();
+  const { isAdmin, isSystemAdmin, role, openAdminModal, logout } = useAdmin();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -64,6 +64,25 @@ const NavigationHeader = () => {
               <Store className="w-4 h-4" />
               Products Store
             </Link>
+            {isAdmin && (
+              <Link
+                to="/statistics"
+                className={`flex items-center gap-2 py-2 min-h-[44px] transition-colors relative ${
+                  isActivePath('/statistics')
+                    ? 'text-cyan-400 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-cyan-400 after:rounded-full'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                Statistics
+              </Link>
+            )}
+            {isSystemAdmin && (
+              <Link to="/admin/passwords" className="flex items-center gap-2 py-2 min-h-[44px] text-slate-300 hover:text-white transition-colors">
+                <KeyRound className="w-4 h-4" />
+                Manage Passwords
+              </Link>
+            )}
           </nav>
 
           {/* Header Action Controls */}
@@ -72,7 +91,7 @@ const NavigationHeader = () => {
               <div className="flex items-center gap-2">
                 <span className="hidden sm:inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs px-3 py-1.5 rounded-full font-semibold">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  Admin Active
+                  {role === 'systemAdmin' ? 'System Admin' : 'Officer'} Active
                 </span>
                 <button
                   type="button"
@@ -101,6 +120,8 @@ const NavigationHeader = () => {
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               className="md:hidden min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white"
               aria-label="Toggle Navigation Menu"
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-navigation"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -109,7 +130,7 @@ const NavigationHeader = () => {
 
         {/* Mobile Dropdown Navigation Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-3 border-t border-slate-800 space-y-2">
+          <div id="mobile-navigation" className="md:hidden py-3 border-t border-slate-800 space-y-2" role="navigation" aria-label="Mobile navigation">
             <Link
               to="/"
               onClick={() => setMobileMenuOpen(false)}
@@ -130,6 +151,24 @@ const NavigationHeader = () => {
               <Store className="w-4 h-4" />
               Products Store
             </Link>
+            {isAdmin && (
+              <Link
+                to="/statistics"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-4 min-h-[44px] rounded-xl text-sm font-bold transition-colors ${
+                  isActivePath('/statistics') ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'text-slate-300 hover:bg-slate-900'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                Statistics
+              </Link>
+            )}
+            {isSystemAdmin && (
+              <Link to="/admin/passwords" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 min-h-[44px] rounded-xl text-sm font-bold text-slate-300 hover:bg-slate-900">
+                <KeyRound className="w-4 h-4" />
+                Manage Passwords
+              </Link>
+            )}
           </div>
         )}
       </div>
@@ -172,10 +211,6 @@ function App() {
                 <span className="bg-slate-900 border border-slate-800 px-3 py-1 rounded-md text-cyan-400">
                   Tech Navy & Electric Cyan Theme
                 </span>
-                <span>•</span>
-                <span>Vite + React 18</span>
-                <span>•</span>
-                <span>Backend Port 5000</span>
               </div>
             </div>
           </footer>

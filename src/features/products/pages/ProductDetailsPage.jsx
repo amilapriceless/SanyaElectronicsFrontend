@@ -47,7 +47,7 @@ const formatSpecificationValue = (key, value) => {
 const ProductDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAdmin } = useAdmin();
+  const { isSystemAdmin } = useAdmin();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -67,13 +67,7 @@ const ProductDetailsPage = () => {
         const productData = response?.data || response?.product || response;
         setProduct(productData);
       } catch (err) {
-        console.warn('Failed to fetch from backend, attempting seed data match:', err.message);
-        const mockFallback = getMockProductById(id);
-        if (mockFallback) {
-          setProduct(mockFallback);
-        } else {
-          setError(err.message || 'Product not found.');
-        }
+        setError(err.message || 'Product could not be loaded.');
       } finally {
         setLoading(false);
       }
@@ -82,74 +76,13 @@ const ProductDetailsPage = () => {
     fetchProduct();
   }, [id]);
 
-  const getMockProductById = (targetId) => {
-    const mocks = [
-      {
-        _id: 'prod-1',
-        productCode: 'REF-LG-335',
-        name: 'LG Smart Inverter Double Door Refrigerator 335L',
-        brand: 'LG',
-        category: 'Refrigerators',
-        description: 'Energy-saving double door refrigerator with smart inverter linear compressor and multi air flow cooling.',
-        powerConsumption: 140,
-        powerConsumptionUnit: 'W',
-        technology: 'Inverter',
-        prices: { cash: 899, hire: 1050 },
-        stock: 12,
-        images: [
-          'https://images.unsplash.com/photo-1584992236310-6edddc08acff?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: [
-          { type: 'Compressor Warranty', period: '10 Years' },
-          { type: 'Full Unit', period: '1 Year' }
-        ],
-        specifications: {
-          'Door Type': 'Double Door',
-          'Capacity': '335L',
-          'Color': 'Silver',
-          'Cooling System': 'Frost Free Multi Air Flow',
-          'Refrigerant': 'R600a',
-          'Energy Star Rating': '5 Star Energy Efficient'
-        }
-      },
-      {
-        _id: 'prod-1b',
-        productCode: 'REF-SAM-480',
-        name: 'Samsung Twin Cooling Plus Side by Side Refrigerator 480L',
-        brand: 'Samsung',
-        category: 'Refrigerators',
-        description: 'Premium Samsung side by side refrigerator with Twin Cooling Plus technology, digital inverter compressor, and water dispenser.',
-        powerConsumption: 180,
-        powerConsumptionUnit: 'W',
-        technology: 'Inverter',
-        prices: { cash: 1299, hire: 1499 },
-        stock: 7,
-        images: [
-          'https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: [
-          { type: 'Digital Inverter Compressor', period: '20 Years' },
-          { type: 'Comprehensive Warranty', period: '1 Year' }
-        ],
-        specifications: {
-          'Door Type': 'Side by Side',
-          'Capacity': '480L',
-          'Color': 'Black',
-          'Cooling System': 'Twin Cooling Plus',
-          'Refrigerant': 'R600a'
-        }
-      }
-    ];
-    return mocks.find((m) => m._id === targetId || m.id === targetId) || mocks[0];
-  };
-
   const handleDeleteConfirm = async () => {
     setIsDeleting(true);
     try {
       await deleteProduct(id);
       navigate('/products');
     } catch (err) {
-      alert(`Failed to delete: ${err.message}`);
+      setError(err.message || 'Failed to delete product.');
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
@@ -210,7 +143,7 @@ const ProductDetailsPage = () => {
             Back to Storefront
           </button>
 
-          {isAdmin && (
+          {isSystemAdmin && (
             <div className="flex items-center gap-3">
               <Link
                 to={`/products/${id}/edit`}
@@ -234,10 +167,12 @@ const ProductDetailsPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
           {/* Left Column: Image Gallery */}
           <div className="lg:col-span-6 space-y-4">
-            <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs aspect-4/3 flex items-center justify-center p-6">
+            <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs aspect-[4/3] flex items-center justify-center p-6">
               <img
                 src={images[activeImageIndex]}
                 alt={product.name}
+                loading="eager"
+                decoding="async"
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.src = 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?auto=format&fit=crop&w=800&q=80';
@@ -256,7 +191,7 @@ const ProductDetailsPage = () => {
                       activeImageIndex === idx ? 'border-cyan-500 ring-2 ring-cyan-200' : 'border-slate-200 opacity-70 hover:opacity-100'
                     }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    <img src={img} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>

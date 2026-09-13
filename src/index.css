@@ -2,6 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+@media (max-width: 767px) {
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    min-height: 48px;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+}
+
+img {
+  max-width: 100%;
+}
+
 /* Custom scrollbar and smooth transitions */
 ::-webkit-scrollbar {
   width: 8px;

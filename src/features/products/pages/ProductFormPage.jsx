@@ -72,8 +72,6 @@ const ProductFormPage = () => {
     setError('');
     setApiError(null);
 
-    console.log('🚀 Sending sanitized product payload to API:', payload);
-
     try {
       if (isEditMode) {
         await updateProduct(id, payload);
@@ -82,8 +80,6 @@ const ProductFormPage = () => {
       }
       navigate('/products');
     } catch (err) {
-      console.error('Zod Validation Error Details:', err.response?.data);
-      console.error('❌ API Error saving product:', err.message);
       setApiError({
         message: err.message || 'Server validation failed. Please check form parameters.',
         fieldErrors: extractValidationErrors(err.response?.data || err.data),

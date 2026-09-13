@@ -21,7 +21,7 @@ import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import ACCalculator from '../components/ACCalculator';
 
 const ProductListPage = () => {
-  const { isAdmin } = useAdmin();
+  const { isSystemAdmin } = useAdmin();
 
   // View state for Admin mode (grid vs table)
   const [viewMode, setViewMode] = useState('grid');
@@ -30,7 +30,6 @@ const ProductListPage = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isUsingFallback, setIsUsingFallback] = useState(false);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState('featured');
 
@@ -71,15 +70,10 @@ const ProductListPage = () => {
     try {
       const queryParams = activeCategory === 'All Products' ? {} : { category: activeCategory };
       const responseData = await getProducts(queryParams);
-      console.log('📦 API GET /api/products response:', responseData);
-
       setProducts(Array.isArray(responseData) ? responseData : []);
-      setIsUsingFallback(false);
     } catch (err) {
-      console.error('❌ Backend API connection error:', err.message);
-      setError(`Backend server at http://localhost:5000 unavailable or returned error (${err.message}).`);
+      setError(err.message || 'Could not load products. Please try again.');
       setProducts([]);
-      setIsUsingFallback(false);
     } finally {
       setLoading(false);
     }
@@ -403,19 +397,11 @@ const ProductListPage = () => {
     if (!selectedProductToDelete) return;
     setIsDeleting(true);
     try {
-      if (!isUsingFallback) {
-        await deleteProduct(selectedProductToDelete._id || selectedProductToDelete.id);
-        await fetchProducts();
-      } else {
-        setProducts((prev) =>
-          prev.filter(
-            (item) => (item._id || item.id) !== (selectedProductToDelete._id || selectedProductToDelete.id)
-          )
-        );
-      }
+      await deleteProduct(selectedProductToDelete._id || selectedProductToDelete.id);
+      await fetchProducts();
       setSelectedProductToDelete(null);
     } catch (err) {
-      alert(`Failed to delete product: ${err.message}`);
+      setError(err.message || 'Failed to delete product.');
     } finally {
       setIsDeleting(false);
     }
@@ -500,7 +486,7 @@ const ProductListPage = () => {
             </select>
 
             {/* Admin View Mode Switcher */}
-            {isAdmin && (
+            {isSystemAdmin && (
               <div className="flex items-center rounded-2xl border border-slate-300 bg-white p-1 min-h-[44px]">
                 <button
                   type="button"
@@ -532,7 +518,7 @@ const ProductListPage = () => {
             )}
 
             {/* Admin Create Button */}
-            {isAdmin && (
+            {isSystemAdmin && (
               <Link
                 to="/products/new"
                 className="min-h-[44px] flex items-center justify-center gap-2 rounded-2xl border border-slate-800 bg-slate-950 px-5 text-sm font-bold text-cyan-400 shadow-md transition-all hover:bg-slate-800"
@@ -579,7 +565,7 @@ const ProductListPage = () => {
                   Reset All Filters
                 </button>
               </div>
-            ) : isAdmin && viewMode === 'table' ? (
+            ) : isSystemAdmin && viewMode === 'table' ? (
               /* Admin Responsive Data Table View */
               <AdminProductTable
                 products={displayedProducts}
